@@ -1,4 +1,4 @@
-Inline Chunk Webpack Plugin
+Inline Chunks Webpack Plugin
 ===================
 
 This is a [webpack](http://webpack.github.io/) plugin that inline your chunks that is written as links or script using [HtmlWebpackPlugin](https://github.com/ampedandwired/html-webpack-plugin).
@@ -10,23 +10,25 @@ Installation
 ------------
 Install the plugin with npm:
 ```shell
-$ npm install html-webpack-inline-chunk-plugin --save-dev
+npm install inline-chunks-html-webpack-plugin --save-dev
 ```
 
 Configuration
 -----------
 - `inlineChunks`: An array of names of chunk to inline.
+- `deleteFile`: delete file from asset default to `false`
 ```javascript
 //webpack.config
-const InlineChunkWebpackPlugin = require('html-webpack-inline-chunk-plugin');
+const InlineChunksWebpackPlugin = require('inline-chunks-html-webpack-plugin');
 module.exports = {
   //.....
   //.....
   plugins: [
     //...
     //...
-    	new InlineChunkWebpackPlugin({
-        inlineChunks: ['manifest']
+    	new InlineChunksWebpackPlugin({
+        inlineChunks: ['manifest'],
+        deleteFile: true // do not build chunks
 	})
   //...
   ]
@@ -45,7 +47,7 @@ Split webpack runtime in manifest and inline it.
 {
   entry: {
     app: './main.js',
-    common: ['react','redux']
+    vendor: ['react','redux']
   },
   output: {
     path: path.join(__dirname, "js"),
@@ -54,13 +56,18 @@ Split webpack runtime in manifest and inline it.
   },
   plugins: [
     new webpack.optimize.CommonsChunkPlugin({
-      names: ['common', 'manifest']
+      name: 'vendor'
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest',
+      chunks: ['vendor']
     }),
     new HtmlWebpackPlugin({
       // your options
     }),
-    new InlineChunkWebpackPlugin({
-        inlineChunks: ['manifest']
+    new InlineChunksWebpackPlugin({
+        inlineChunks: ['manifest'],
+        deleteFile: true
 	})
   ]
 }
