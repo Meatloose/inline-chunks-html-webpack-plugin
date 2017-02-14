@@ -16,24 +16,25 @@ npm install inline-chunks-html-webpack-plugin --save-dev
 Configuration
 -----------
 - `inlineChunks`: An array of names of chunk to inline.
+   - `chunk.ext`: A chunk with file extension to distinguish of the same name
 - `deleteFile`: delete file from asset default to `false`
 ```javascript
 //webpack.config
 const InlineChunksWebpackPlugin = require('inline-chunks-html-webpack-plugin');
 module.exports = {
-  //.....
-  //.....
-  plugins: [
-    //...
-    //...
-    	new InlineChunksWebpackPlugin({
+    //.....
+    //.....
+    plugins: [
+      //...
+      //...
+      new InlineChunksWebpackPlugin({
         inlineChunks: ['manifest'],
         deleteFile: true // do not build chunks
-	})
-  //...
-  ]
-  //.....
-  //.....
+      })
+    //...
+    ]
+    //.....
+    //.....
 }
 ```
 Example Usage
@@ -62,12 +63,14 @@ Split webpack runtime in manifest and inline it.
       name: 'manifest',
       chunks: ['vendor']
     }),
+    // extract css into its own file
+    new ExtractTextPlugin('[name].[contenthash].css'),
     new HtmlWebpackPlugin({
       // your options
     }),
     new InlineChunksWebpackPlugin({
-        inlineChunks: ['manifest'],
-        deleteFile: true
+      inlineChunks: ['manifest', 'app.css'],
+      deleteFile: true
 	})
   ]
 }
