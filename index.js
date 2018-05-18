@@ -2,24 +2,25 @@ var sourceMappingURL = require('source-map-url');
 var _ = require('lodash');
 
 function InlineChunkPlugin(options) {
-  this.options = Object.assign({ inlineChunks: [] }, options);
+  this.options = Object.assign({ inlineChunks: [], quiet: false }, options);
 }
 
-InlineChunkPlugin.prototype.apply = function(compiler) {
-  var me = this
+InlineChunkPlugin.prototype.log = function (message) {
+  if (!this.options.quiet) {
+    console.log(message);
+  }
+};
 
-  compiler.plugin('compilation', function(compilation) {
+InlineChunkPlugin.prototype.performInlining = function (compilation, htmlPluginData, callback) {
+  var me = this;
 
-    compilation.plugin('html-webpack-plugin-alter-asset-tags', (htmlPluginData, callback) => {
-      var inlineChunks = me.options.inlineChunks
-      var deleteFile = me.options.deleteFile
-      var publicPath = compilation.options.output.publicPath || '';
+  var deleteFile = me.options.deleteFile
 
-      if (publicPath && publicPath.substr(-1) !== '/') {
-        publicPath += '/';
-      }
-
-      _.each(inlineChunks, function(chunkName) {
+  var publicPath = compilation.options.output.publicPath || '';
+  if (publicPath && publicPath.substr(-1) !== '/') {
+    publicPath += '/';
+  }
+  _.each(me.options.inlineChunks, function (chunkName) {
         var separator = /\./;
         var splitUp = chunkName.split(separator);
         var name = splitUp[0];
@@ -31,34 +32,52 @@ InlineChunkPlugin.prototype.apply = function(compiler) {
           return file.indexOf(ext) > -1
         }) || matchedChunk.files)[0];
 
-        console.log("inline-chunks-html-webpack-plugin: Inlined " + chunkPath);
+    me.log("html-webpack-inline-chunk-plugin: Inlined " + chunkPath);
+    if (chunkPath) {
+      var path = publicPath + chunkPath;
+      var head = _.find(htmlPluginData.head, { attributes: { href: path } });
+      var body = _.find(htmlPluginData.body, { attributes: { src: path } });
+      var tag = head || body;
 
-        if (chunkPath) {
-          var path = publicPath + chunkPath;
-          var head = _.find(htmlPluginData.head, { attributes: { href: path } });
-          var body = _.find(htmlPluginData.body, { attributes: { src: path } });
-          var tag = head || body;
+      if (tag) {
+        if (tag.tagName === 'script') {
+          delete tag.attributes.src;
+        } else if (tag.tagName === 'link') {
+          tag.tagName = 'style';
+          tag.closeTag = true;
+          tag.attributes.type = 'text/css';
 
-          if (tag) {
-            if (tag.tagName === 'script') {
-              delete tag.attributes.src;
-            } else if (tag.tagName === 'link') {
-              tag.tagName = 'style';
-              tag.closeTag = true;
-              tag.attributes.type = 'text/css';
-              delete tag.attributes.href;
-              delete tag.attributes.rel;
-            };
-            tag.innerHTML = sourceMappingURL.removeFrom(compilation.assets[chunkPath].source());
-          }
-          if (deleteFile) {
-            delete compilation.assets[chunkPath]
-          }
-        }
-      });
-      callback(null, htmlPluginData);
-    });
+          delete tag.voidTag;
+          delete tag.attributes.href;
+          delete tag.attributes.rel;
+        };
+        tag.innerHTML = sourceMappingURL.removeFrom(compilation.assets[chunkPath].source());
+      }
+      if (deleteFile) {
+        delete compilation.assets[chunkPath]
+      }
+    }
   });
-}
+  callback(null, htmlPluginData);
+};
 
-module.exports = InlineChunkPlugin
+InlineChunkPlugin.prototype.apply = function (compiler) {
+  var me = this;
+
+  if (compiler.hooks) {
+    // webpack 4 support
+    compiler.hooks.compilation.tap('HtmlWebpackInlineChunkPlugin', function (compilation) {
+      compilation.hooks.htmlWebpackPluginAlterAssetTags.tapAsync('HtmlWebpackInlineChunkPlugin', function (htmlPluginData, callback) {
+        me.performInlining(compilation, htmlPluginData, callback);
+      });
+    });
+  } else {
+    compiler.plugin('compilation', function (compilation) {
+      compilation.plugin('html-webpack-plugin-alter-asset-tags', function (htmlPluginData, callback) {
+        me.performInlining(compilation, htmlPluginData, callback);
+      });
+    });
+  }
+};
+
+module.exports = InlineChunkPlugin;
