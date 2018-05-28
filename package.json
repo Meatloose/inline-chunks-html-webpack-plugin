@@ -1,6 +1,6 @@
 {
   "name": "inline-chunks-html-webpack-plugin",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "webpack plugin to inline chunks in html webpack plugin",
   "repository": {
     "url": "https://github.com/Meatloose/inline-chunks-html-webpack-plugin"

@@ -1,6 +1,8 @@
 Inline Chunks Webpack Plugin
 ===================
 
+**webpack v4 support**
+
 This is a [webpack](http://webpack.github.io/) plugin that inline your chunks that is written as link or script using [HtmlWebpackPlugin](https://github.com/ampedandwired/html-webpack-plugin).
 
 It both can be use to inline [manifest](https://github.com/webpack/webpack/tree/master/examples/chunkhash) & [css](https://github.com/webpack/webpack/blob/master/examples/code-splitted-css-bundle) within link or script tag to save a http request.
